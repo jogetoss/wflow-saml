@@ -1,6 +1,13 @@
 # Description
 
-This repository is meant to serve as a general template for how to set up new repositories in the JogetOSS organization. 
+SAML is an XML-based, open-standard data format for exchanging authentication and authorization data between parties, in particular, between an identity provider and a service provider.
+Supported by many vendors and services, it is a popular method for single sign-on (SSO) between systems. 
+This plugin extends the Security Enhanced Directory Manager to support SAML 2.0 Identity Provider-Initiated Login SSO.
+
+NOTE: The current functionality only supports IdP-initiated SSO and is tested to work with:
+- [Active Directory Federation Services (AD FS)](https://dev.joget.org/community/display/DX7/Joget+SharePoint+SSO+Integration)
+- [Azure Active Directory](https://dev.joget.org/community/display/DX7/Joget+SSO+with+Azure+Active+Directory+using+SAML)
+- [Keycloak](https://dev.joget.org/community/display/DX7/Joget+SSO+with+Keycloak+using+SAML)
 
 # Getting Help
 

@@ -1,0 +1,47 @@
+[
+    {
+        title : 'SAML 2.0 Settings',
+        properties : [
+            {
+                name : 'entityId',
+                label : 'Entity ID',
+                type : 'label',
+                value : '%s',
+            },{
+                name : 'acsUrl',
+                label : 'ACS URL',
+                type : 'label',
+                value : '%s',
+            },{
+                name : 'certificate',
+                label : 'IDP Certificate',
+                type : 'textarea',
+                value : '',
+                rows : '7',
+                cols : '65',
+                required : 'true'
+            },{
+                name : 'userProvisioning',
+                label : 'User Provisioning Enabled',
+                type : 'checkbox',
+                options : [{
+                    value : 'true',
+                    label : ''
+                }]
+            }
+        ]
+    },
+    %s,
+    {
+        title : '@@app.edm.label.addonDirectorManager@@',
+        properties : [
+            {
+                name : 'dm1',
+                label : '@@app.edm.label.addon@@',
+                type : 'elementselect',
+                options_ajax : '[CONTEXT_PATH]/web/json/plugin/org.joget.plugin.directory.SecureDirectoryManager/service',
+                url : '[CONTEXT_PATH]/web/property/json[APP_PATH]/getPropertyOptions'
+            }%s
+        ]
+    }
+]
