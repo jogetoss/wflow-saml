@@ -52,7 +52,7 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
 
     @Override
     public String getVersion() {
-        return "6.0.1";
+        return "6.0.2";
     }
 
     @Override
@@ -71,7 +71,7 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
             for (int i = 2; i <= SecureDirectoryManagerImpl.NUM_OF_DM; i++) {
                 addOnJson += ",{\nname : 'dm" + i + "',\n label : '@@app.edm.label.addon@@',\n type : 'elementselect',\n";
                 addOnJson += "options_ajax : '[CONTEXT_PATH]/web/json/plugin/org.joget.plugin.directory.SecureDirectoryManager/service',\n";
-                addOnJson += "url : '[CONTEXT_PATH]/web/property/json[APP_PATH]/getPropertyOptions'\n}";
+                addOnJson += "url : '[CONTEXT_PATH]/web/property/json/getPropertyOptions'\n}";
             }
         }
 
