@@ -5,6 +5,7 @@ import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,9 +16,11 @@ import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.workflow.security.WorkflowUserDetails;
 import org.joget.commons.util.LogUtil;
 import org.joget.commons.util.ResourceBundleUtil;
+import org.joget.directory.dao.GroupDao;
 import org.joget.directory.dao.RoleDao;
 import org.joget.directory.dao.UserDao;
 import org.joget.directory.ext.DirectoryManagerAuthenticatorImpl;
+import org.joget.directory.model.Group;
 import org.joget.directory.model.Role;
 import org.joget.directory.model.User;
 import org.joget.directory.model.service.DirectoryManager;
@@ -134,6 +137,7 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
             samlResponse.setDestinationUrl(request.getRequestURL().toString());
 
             if (samlResponse.isValid()) {
+            	 UserDao userDao = (UserDao)AppUtil.getApplicationContext().getBean("userDao");
                 String username = samlResponse.getNameId();
                 // get user
                 User user = dmImpl.getUserByUsername(username);
@@ -177,12 +181,66 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
                     }
                     user.setRoles(roleSet);
                     // add user
-                    UserDao userDao = (UserDao)AppUtil.getApplicationContext().getBean("userDao");
+                   
                     userDao.addUser(user);
                 } else if (user == null && !userProvisioningEnabled) {
                     response.sendRedirect(request.getContextPath() + "/web/login?login_error=1");
                     return;
                 }
+                
+                LogUtil.info(getClassName(),"addGroup "+"true".equalsIgnoreCase(dmImpl.getPropertyString("addGroup")));
+                
+                if("true".equalsIgnoreCase(dmImpl.getPropertyString("addGroup"))) {
+                
+                GroupDao groupDao = (GroupDao)AppUtil.getApplicationContext().getBean("groupDao");
+                
+                
+                
+               user.setGroups(null);
+               String groupsSaml=samlResponse.getAttribute(dmImpl.getPropertyString("groupClaim"));
+               if("true".equalsIgnoreCase(dmImpl.getPropertyString("debugMode")))
+            	   LogUtil.info(getClassName(),"groups "+groupsSaml);
+               
+               Set<Group> groups=new HashSet<Group>();
+               
+               if(groupsSaml!=null) {
+            	   
+            	   groupsSaml= groupsSaml.replace("[", "");
+            	   groupsSaml= groupsSaml.replace("]", "");
+            	   
+            	   String grps[]=groupsSaml.split(",");
+            	   for (int i = 0; i < grps.length; i++) {
+					String grp=grps[i];
+			    if("true".equalsIgnoreCase(dmImpl.getPropertyString("debugMode")))
+			             LogUtil.info(getClassName(),"group"+grp.trim());
+				
+				Group group=groupDao.getGroup(grp.trim());
+            	if(group==null)
+            	{
+            	group=new Group();
+            	group.setId(grp.trim());
+            	group.setName(grp.trim());
+            	groupDao.addGroup(group);
+            	 if("true".equalsIgnoreCase(dmImpl.getPropertyString("debugMode")))
+            	    LogUtil.info(getClassName(),"group added"+group.getId());
+            	}
+				
+            	groups.add(group);
+            	   }
+            	   
+            	   
+            	   
+               }
+               
+               
+               user.setGroups(groups);
+               
+               userDao.updateUser(user);
+             
+                }
+               
+               
+                
                 
                 // verify license
                 PluginManager pluginManager = (PluginManager) AppUtil.getApplicationContext().getBean("pluginManager");
@@ -212,18 +270,29 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
 
                 // redirect
                 String relayState = request.getParameter("RelayState");
+                
+           	 if("true".equalsIgnoreCase(dmImpl.getPropertyString("debugMode")))
+             	LogUtil.info(getClassName(),"relayState added"+relayState);
+             	
                 if (relayState != null && !relayState.isEmpty()) {
                     response.sendRedirect(relayState);
                 } else {
+                	
+                	if("true".equalsIgnoreCase(dmImpl.getPropertyString("debugMode")))
+                     	LogUtil.info(getClassName(),"request.getContextPath() added"+request.getContextPath());
                     response.sendRedirect(request.getContextPath());
                 }
             } else {
+            	if("true".equalsIgnoreCase(dmImpl.getPropertyString("debugMode")))
+                 	LogUtil.info(getClassName(),"Invalid Login");
                 response.sendRedirect(request.getContextPath() + "/web/login?login_error=1");
             }
         } catch (Exception ex) {
             LogUtil.error(getClass().getName(), ex, "Error in SAML login");
             request.getSession().setAttribute("SPRING_SECURITY_LAST_EXCEPTION", new Exception(ResourceBundleUtil.getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials")));
-            String url = request.getContextPath() + "/web/login?login_error=1";
+            String url = request.getContextPath() + "/web/login?login_error=1&error="+ex.getMessage();
+      
+             	
             response.sendRedirect(url);
         }
 

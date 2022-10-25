@@ -29,6 +29,34 @@
                     label : ''
                 }]
             }
+            ,{
+                name : 'addGroup',
+                label : 'Add Group Enabled',
+                type : 'checkbox',
+                options : [{
+                    value : 'true',
+                    label : ''
+                }]
+            },
+            {
+                  name: 'groupClaim',
+                label: 'Group Claim',
+                type: 'textfield',
+                 required: 'true',
+                control_field: 'addGroup',
+                control_value: 'true',
+                control_use_regex: 'false',
+                value:'http://schemas.microsoft.com/ws/2008/06/identity/claims/groups'
+            },{
+                name : 'debugMode',
+                label : 'Debug Mode',
+                type : 'checkbox',
+                options : [{
+                    value : 'true',
+                    label : ''
+                }]
+            }
+            
         ]
     },
     %s,
