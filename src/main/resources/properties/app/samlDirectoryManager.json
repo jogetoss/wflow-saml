@@ -4,17 +4,17 @@
         properties : [
             {
                 name : 'entityId',
-                label : 'Entity ID',
+                label : '@@org.joget.marketplace.saml.dm.entityId@@',
                 type : 'label',
                 value : '%s',
             },{
                 name : 'acsUrl',
-                label : 'ACS URL',
+                label : '@@org.joget.marketplace.saml.dm.acsUrl@@',
                 type : 'label',
                 value : '%s',
             },{
                 name : 'certificate',
-                label : 'IDP Certificate',
+                label : '@@org.joget.marketplace.saml.dm.certificate@@',
                 type : 'textarea',
                 value : '',
                 rows : '7',
@@ -22,12 +22,38 @@
                 required : 'true'
             },{
                 name : 'userProvisioning',
-                label : 'User Provisioning Enabled',
+                label : '@@org.joget.marketplace.saml.dm.userProvisioning@@',
                 type : 'checkbox',
                 options : [{
                     value : 'true',
                     label : ''
                 }]
+            }
+        ]
+    },
+    {
+        title: '@@org.joget.marketplace.saml.dm.configAttribute@@',
+        properties: [
+            {
+                name: 'attrFirstName',
+                label: '@@org.joget.marketplace.saml.dm.attrFirstName@@',
+                type: 'textfield',
+                required: 'true',
+                value: 'firstName'
+            },
+            {
+                name: 'attrLastName',
+                label: '@@org.joget.marketplace.saml.dm.attrLastName@@',
+                type: 'textfield',
+                required: 'true',
+                value: 'lastName'
+            },
+            {
+                name: 'attrEmail',
+                label: '@@org.joget.marketplace.saml.dm.attrEmail@@',
+                type : 'textfield',
+                required: 'true',
+                value: 'email'
             }
         ]
     },

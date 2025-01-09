@@ -52,7 +52,7 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
 
     @Override
     public String getVersion() {
-        return "6.0.2";
+        return "6.0.3";
     }
 
     @Override
@@ -83,7 +83,7 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
         acsUrl += request.getContextPath() + "/web/json/plugin/org.joget.plugin.saml.SamlDirectoryManager/service";
         String entityId = acsUrl;
         
-        String json = AppUtil.readPluginResource(getClass().getName(), "/properties/app/samlDirectoryManager.json", new String[]{entityId, acsUrl, usJson, addOnJson}, true, null);
+        String json = AppUtil.readPluginResource(getClass().getName(), "/properties/app/samlDirectoryManager.json", new String[]{entityId, acsUrl, usJson, addOnJson}, true, "messages/samlDirectoryManager");
         return json;
     }
 
