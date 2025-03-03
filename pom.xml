@@ -71,7 +71,7 @@
         <dependency>
             <groupId>org.joget</groupId>
             <artifactId>wflow-core</artifactId>
-            <version>6.0-SNAPSHOT</version>
+            <version>7.0-SNAPSHOT</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
@@ -83,8 +83,8 @@
         <!-- Change plugin specific dependencies here -->
         <dependency>
             <groupId>org.joget</groupId>
-            <artifactId>wflow-enterprise-plugins</artifactId>
-            <version>6.0-SNAPSHOT</version>
+            <artifactId>jw-enterprise-plugins</artifactId>
+            <version>7.0-SNAPSHOT</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>

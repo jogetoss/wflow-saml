@@ -25,6 +25,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.codec.binary.Base64;
+import org.joget.commons.util.LogUtil;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -46,6 +47,12 @@ public class SamlResponse {
         this.accountSettings = accountSettings;
         certificate = new Certificate();
         certificate.loadCertificate(this.accountSettings.getCertificate());
+    }
+    public SamlResponse()
+    {
+    	this.accountSettings = new AccountSettings();
+		this.certificate = new Certificate();
+		
     }
 
     public void loadXml(String xml) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
@@ -71,6 +78,7 @@ public class SamlResponse {
         Base64 base64 = new Base64();
         byte[] decodedB = base64.decode(response);
         String decodedS = new String(decodedB);
+       
         loadXml(decodedS);
     }
 
@@ -227,4 +235,6 @@ public class SamlResponse {
     public void setDestinationUrl(String urld) {
         currentUrl = urld;
     }
+    
+    
 }
