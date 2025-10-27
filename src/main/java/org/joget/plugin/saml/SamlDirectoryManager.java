@@ -11,6 +11,7 @@ import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.workflow.security.WorkflowUserDetails;
 import org.joget.commons.util.LogUtil;
@@ -32,11 +33,13 @@ import org.joget.workflow.util.WorkflowUtil;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 
 /**
- * SAML SP implementation adapted from https://github.com/onelogin/java-saml/tree/v1.1.2
+ * SAML SP implementation adapted from
+ * https://github.com/onelogin/java-saml/tree/v1.1.2
  */
 public class SamlDirectoryManager extends SecureDirectoryManager {
 
@@ -52,14 +55,14 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
 
     @Override
     public String getVersion() {
-        return "6.0.3";
+        return "8.0.3";
     }
 
     @Override
     public DirectoryManager getDirectoryManagerImpl(Map properties) {
         return super.getDirectoryManagerImpl(properties);
     }
-        
+
     @Override
     public String getPropertyOptions() {
         UserSecurityFactory f = (UserSecurityFactory) new SecureDirectoryManagerImpl(null);
@@ -76,13 +79,13 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
         }
 
         HttpServletRequest request = WorkflowUtil.getHttpServletRequest();
-        String acsUrl = request.getScheme()+ "://" + request.getServerName();
+        String acsUrl = request.getScheme() + "://" + request.getServerName();
         if (request.getServerPort() != 80 && request.getServerPort() != 443) {
             acsUrl += ":" + request.getServerPort();
         }
         acsUrl += request.getContextPath() + "/web/json/plugin/org.joget.plugin.saml.SamlDirectoryManager/service";
         String entityId = acsUrl;
-        
+
         String json = AppUtil.readPluginResource(getClass().getName(), "/properties/app/samlDirectoryManager.json", new String[]{entityId, acsUrl, usJson, addOnJson}, true, "messages/samlDirectoryManager");
         return json;
     }
@@ -110,19 +113,19 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
         }
 
     }
-            
+
     void doLogin(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
 
             // read from properties
-            DirectoryManagerProxyImpl dm = (DirectoryManagerProxyImpl)AppUtil.getApplicationContext().getBean("directoryManager");
-            SecureDirectoryManagerImpl dmImpl = (SecureDirectoryManagerImpl)dm.getDirectoryManagerImpl();
+            DirectoryManagerProxyImpl dm = (DirectoryManagerProxyImpl) AppUtil.getApplicationContext().getBean("directoryManager");
+            SecureDirectoryManagerImpl dmImpl = (SecureDirectoryManagerImpl) dm.getDirectoryManagerImpl();
             String certificate = dmImpl.getPropertyString("certificate");
             boolean userProvisioningEnabled = Boolean.parseBoolean(dmImpl.getPropertyString("userProvisioning"));
             String attrEmail = dmImpl.getPropertyString("attrEmail");
             String attrFirstName = dmImpl.getPropertyString("attrFirstName");
             String attrLastName = dmImpl.getPropertyString("attrLastName");
-                        
+
             if (certificate == null || certificate.isEmpty()) {
                 throw new CertificateException("IDP certificate is missing");
             }
@@ -148,7 +151,7 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
                     String email = samlResponse.getAttribute(attrEmail);
                     if (email != null) {
                         if (email.startsWith("[")) {
-                            email = email.substring(1, email.length()-1);
+                            email = email.substring(1, email.length() - 1);
                         }
                         user.setEmail(email);
                     }
@@ -156,7 +159,7 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
                     String firstName = samlResponse.getAttribute(attrFirstName);
                     if (firstName != null) {
                         if (firstName.startsWith("[")) {
-                            firstName = firstName.substring(1, firstName.length()-1);
+                            firstName = firstName.substring(1, firstName.length() - 1);
                         }
                         user.setFirstName(firstName);
                     }
@@ -164,12 +167,12 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
                     String lastName = samlResponse.getAttribute(attrLastName);
                     if (lastName != null) {
                         if (lastName.startsWith("[")) {
-                            lastName = lastName.substring(1, lastName.length()-1);
+                            lastName = lastName.substring(1, lastName.length() - 1);
                         }
                         user.setLastName(lastName);
                     }
                     // set role
-                    RoleDao roleDao = (RoleDao)AppUtil.getApplicationContext().getBean("roleDao");
+                    RoleDao roleDao = (RoleDao) AppUtil.getApplicationContext().getBean("roleDao");
                     Set roleSet = new HashSet();
                     Role r = roleDao.getRole("ROLE_USER");
                     if (r != null) {
@@ -177,19 +180,19 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
                     }
                     user.setRoles(roleSet);
                     // add user
-                    UserDao userDao = (UserDao)AppUtil.getApplicationContext().getBean("userDao");
+                    UserDao userDao = (UserDao) AppUtil.getApplicationContext().getBean("userDao");
                     userDao.addUser(user);
                 } else if (user == null && !userProvisioningEnabled) {
                     response.sendRedirect(request.getContextPath() + "/web/login?login_error=1");
                     return;
                 }
-                
+
                 // verify license
                 PluginManager pluginManager = (PluginManager) AppUtil.getApplicationContext().getBean("pluginManager");
                 DirectoryManagerAuthenticator authenticator = (DirectoryManagerAuthenticator) pluginManager.getPlugin(DirectoryManagerAuthenticatorImpl.class.getName());
                 DirectoryManager wrapper = new DirectoryManagerWrapper(dmImpl, true);
                 authenticator.authenticate(wrapper, user.getUsername(), user.getPassword());
-                
+
                 // get authorities
                 Collection<Role> roles = dm.getUserRoles(username);
                 List<GrantedAuthority> gaList = new ArrayList<>();
@@ -199,12 +202,18 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
                         gaList.add(ga);
                     }
                 }
-                
+
                 // login user
                 UserDetails details = new WorkflowUserDetails(user);
                 UsernamePasswordAuthenticationToken result = new UsernamePasswordAuthenticationToken(username, "", gaList);
                 result.setDetails(details);
                 SecurityContextHolder.getContext().setAuthentication(result);
+
+                SecurityContext securityContext = SecurityContextHolder.getContext();
+                securityContext.setAuthentication(result);
+
+                HttpSession session = request.getSession(true);
+                session.setAttribute("SPRING_SECURITY_CONTEXT", securityContext);
 
                 // add audit trail
                 WorkflowHelper workflowHelper = (WorkflowHelper) AppUtil.getApplicationContext().getBean("workflowHelper");

@@ -4,7 +4,7 @@
     <groupId>org.joget</groupId>
     <artifactId>wflow-saml</artifactId>
     <packaging>bundle</packaging>
-    <version>6.0.3</version>
+    <version>8.0.3</version>
     <name>wflow-saml</name>
     <url>http://www.joget.org</url>
     <build>
@@ -71,7 +71,7 @@
         <dependency>
             <groupId>org.joget</groupId>
             <artifactId>wflow-core</artifactId>
-            <version>6.0-SNAPSHOT</version>
+            <version>8.0-SNAPSHOT</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
@@ -84,7 +84,7 @@
         <dependency>
             <groupId>org.joget</groupId>
             <artifactId>wflow-enterprise-plugins</artifactId>
-            <version>6.0-SNAPSHOT</version>
+            <version>8.0-SNAPSHOT</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
