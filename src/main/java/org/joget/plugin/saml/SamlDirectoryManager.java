@@ -29,6 +29,7 @@ import org.joget.plugin.base.PluginManager;
 import org.joget.plugin.directory.SecureDirectoryManager;
 import org.joget.plugin.directory.SecureDirectoryManagerImpl;
 import org.joget.workflow.model.dao.WorkflowHelper;
+import org.joget.workflow.model.service.WorkflowUserManager;
 import org.joget.workflow.util.WorkflowUtil;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -55,7 +56,7 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
 
     @Override
     public String getVersion() {
-        return "8.0.3";
+        return "8.0.4";
     }
 
     @Override
@@ -122,6 +123,7 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
             SecureDirectoryManagerImpl dmImpl = (SecureDirectoryManagerImpl) dm.getDirectoryManagerImpl();
             String certificate = dmImpl.getPropertyString("certificate");
             boolean userProvisioningEnabled = Boolean.parseBoolean(dmImpl.getPropertyString("userProvisioning"));
+            boolean userUpdateEnabled = Boolean.parseBoolean(dmImpl.getPropertyString("userUpdateEnabled"));
             String attrEmail = dmImpl.getPropertyString("attrEmail");
             String attrFirstName = dmImpl.getPropertyString("attrFirstName");
             String attrLastName = dmImpl.getPropertyString("attrLastName");
@@ -140,51 +142,22 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
                 String username = samlResponse.getNameId();
                 // get user
                 User user = dmImpl.getUserByUsername(username);
-                if (user == null && userProvisioningEnabled) {
-                    // user does not exist, provision
-                    user = new User();
-                    user.setId(username);
-                    user.setUsername(username);
-                    user.setTimeZone("0");
-                    user.setActive(1);
-                    attrEmail = (attrEmail != null && !attrEmail.isEmpty()) ? attrEmail : "email";
-                    String email = samlResponse.getAttribute(attrEmail);
-                    if (email != null) {
-                        if (email.startsWith("[")) {
-                            email = email.substring(1, email.length() - 1);
-                        }
-                        user.setEmail(email);
-                    }
-                    attrFirstName = (attrFirstName != null && !attrFirstName.isEmpty()) ? attrFirstName : "User.FirstName";
-                    String firstName = samlResponse.getAttribute(attrFirstName);
-                    if (firstName != null) {
-                        if (firstName.startsWith("[")) {
-                            firstName = firstName.substring(1, firstName.length() - 1);
-                        }
-                        user.setFirstName(firstName);
-                    }
-                    attrLastName = (attrLastName != null && !attrLastName.isEmpty()) ? attrLastName : "User.LastName";
-                    String lastName = samlResponse.getAttribute(attrLastName);
-                    if (lastName != null) {
-                        if (lastName.startsWith("[")) {
-                            lastName = lastName.substring(1, lastName.length() - 1);
-                        }
-                        user.setLastName(lastName);
-                    }
-                    // set role
-                    RoleDao roleDao = (RoleDao) AppUtil.getApplicationContext().getBean("roleDao");
-                    Set roleSet = new HashSet();
-                    Role r = roleDao.getRole("ROLE_USER");
-                    if (r != null) {
-                        roleSet.add(r);
-                    }
-                    user.setRoles(roleSet);
-                    // add user
-                    UserDao userDao = (UserDao) AppUtil.getApplicationContext().getBean("userDao");
-                    userDao.addUser(user);
-                } else if (user == null && !userProvisioningEnabled) {
+
+                if (user == null && !userProvisioningEnabled) {
                     response.sendRedirect(request.getContextPath() + "/web/login?login_error=1");
                     return;
+                }
+
+                if (user == null && userProvisioningEnabled) {
+                    user = createNewUser(username, samlResponse, attrEmail, attrFirstName, attrLastName);
+                    UserDao userDao = (UserDao) AppUtil.getApplicationContext().getBean("userDao");
+                    userDao.addUser(user);
+                } else if (user != null && userProvisioningEnabled && userUpdateEnabled) {
+                    updateUserFromSaml(user, samlResponse, attrEmail, attrFirstName, attrLastName);
+                    WorkflowUserManager wum = (WorkflowUserManager) AppUtil.getApplicationContext().getBean("workflowUserManager");
+                    wum.setSystemThreadUser(true);
+                    UserDao userDao = (UserDao) AppUtil.getApplicationContext().getBean("userDao");
+                    userDao.updateUser(user);
                 }
 
                 // verify license
@@ -236,6 +209,64 @@ public class SamlDirectoryManager extends SecureDirectoryManager {
             response.sendRedirect(url);
         }
 
+    }
+
+    private User createNewUser(String username, SamlResponse samlResponse, String attrEmail, String attrFirstName, String attrLastName) {
+        User user = new User();
+        user.setId(username);
+        user.setUsername(username);
+        user.setTimeZone("0");
+        user.setActive(1);
+
+        // Set user attributes from SAML response
+        updateUserFromSaml(user, samlResponse, attrEmail, attrFirstName, attrLastName);
+
+        // Assign default role
+        RoleDao roleDao = (RoleDao) AppUtil.getApplicationContext().getBean("roleDao");
+        Role userRole = roleDao.getRole("ROLE_USER");
+        if (userRole != null) {
+            Set<Role> roleSet = new HashSet<>();
+            roleSet.add(userRole);
+            user.setRoles(roleSet);
+        }
+
+        return user;
+    }
+
+    private void updateUserFromSaml(User user, SamlResponse samlResponse, String attrEmail, String attrFirstName, String attrLastName) {
+        // Update email
+        String emailAttr = (attrEmail != null && !attrEmail.isEmpty()) ? attrEmail : "email";
+        String email = extractAttributeValue(samlResponse.getAttribute(emailAttr));
+        if (email != null && !email.isEmpty()) {
+            user.setEmail(email);
+        }
+
+        // Update first name
+        String firstNameAttr = (attrFirstName != null && !attrFirstName.isEmpty()) ? attrFirstName : "User.FirstName";
+        String firstName = extractAttributeValue(samlResponse.getAttribute(firstNameAttr));
+        if (firstName != null && !firstName.isEmpty()) {
+            user.setFirstName(firstName);
+        }
+
+        // Update last name
+        String lastNameAttr = (attrLastName != null && !attrLastName.isEmpty()) ? attrLastName : "User.LastName";
+        String lastName = extractAttributeValue(samlResponse.getAttribute(lastNameAttr));
+        if (lastName != null && !lastName.isEmpty()) {
+            user.setLastName(lastName);
+        }
+    }
+
+    private String extractAttributeValue(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+            return trimmed.substring(1, trimmed.length() - 1);
+        }
+
+        return trimmed;
     }
 
 }

@@ -28,6 +28,15 @@
                     value : 'true',
                     label : ''
                 }]
+            },
+            {
+                name : 'userUpdateEnabled',
+                label : '@@org.joget.marketplace.saml.dm.userUpdateEnabled@@',
+                type : 'checkbox',
+                options : [{
+                    value : 'true',
+                    label : ''
+                }]
             }
         ]
     },
